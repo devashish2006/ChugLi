@@ -1,0 +1,1 @@
+ALTER TABLE "rooms" ADD COLUMN "location" geography(Point, 4326) NOT NULL;
