@@ -15,6 +15,13 @@
       "when": 1767786019181,
       "tag": "0001_lazy_punisher",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768585359919,
+      "tag": "0002_bizarre_chat",
+      "breakpoints": true
     }
   ]
 }

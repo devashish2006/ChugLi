@@ -12,4 +12,7 @@ export default {
     database: 'chugli_db',
     ssl: false,
   },
+  tablesFilter: ['!spatial_ref_sys', '!geography_columns', '!geometry_columns', '!raster_columns', '!raster_overviews'],
+  verbose: true,
+  strict: false,
 } satisfies Config;

@@ -1,0 +1,685 @@
+{
+  "info": {
+    "name": "ChugLi Backend API",
+    "description": "Complete API collection for ChugLi backend with real-time chat and location-based rooms",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345678"
+  },
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Check if the backend server is running and healthy"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/health",
+                  "host": ["{{base_url}}"],
+                  "path": ["health"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"status\": \"ok\",\n  \"app\": \"chugLi backed\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Root Endpoint",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            },
+            "description": "Get welcome message from the API"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/",
+                  "host": ["{{base_url}}"],
+                  "path": [""]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/html"
+                }
+              ],
+              "cookie": [],
+              "body": "Hello World!"
+            }
+          ]
+        }
+      ],
+      "description": "Basic endpoints to check API availability"
+    },
+    {
+      "name": "Rooms - System",
+      "item": [
+        {
+          "name": "Discover System Rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/rooms/discover?lat=28.6139&lng=77.2090&city=Delhi",
+              "host": ["{{base_url}}"],
+              "path": ["rooms", "discover"],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "28.6139",
+                  "description": "Latitude (required)"
+                },
+                {
+                  "key": "lng",
+                  "value": "77.2090",
+                  "description": "Longitude (required)"
+                },
+                {
+                  "key": "city",
+                  "value": "Delhi",
+                  "description": "City name (optional)"
+                }
+              ]
+            },
+            "description": "Discover all available system rooms for user's location. Auto-creates rooms that don't exist within radius. System rooms are predefined categories like University, College, School, etc."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/rooms/discover?lat=28.6139&lng=77.2090&city=Delhi",
+                  "host": ["{{base_url}}"],
+                  "path": ["rooms", "discover"],
+                  "query": [
+                    {
+                      "key": "lat",
+                      "value": "28.6139"
+                    },
+                    {
+                      "key": "lng",
+                      "value": "77.2090"
+                    },
+                    {
+                      "key": "city",
+                      "value": "Delhi"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"name\": \"University\",\n    \"type\": \"system\",\n    \"latitude\": 28.6139,\n    \"longitude\": 77.2090,\n    \"city\": \"Delhi\",\n    \"isActive\": true,\n    \"activeUserCount\": 12,\n    \"createdAt\": \"2026-01-15T10:30:00.000Z\"\n  },\n  {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"College\",\n    \"type\": \"system\",\n    \"latitude\": 28.6139,\n    \"longitude\": 77.2090,\n    \"city\": \"Delhi\",\n    \"isActive\": true,\n    \"activeUserCount\": 8,\n    \"createdAt\": \"2026-01-15T10:30:00.000Z\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Create System Room (Legacy)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"College\",\n  \"lat\": 28.6139,\n  \"lng\": 77.2090\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/rooms",
+              "host": ["{{base_url}}"],
+              "path": ["rooms"]
+            },
+            "description": "Create a new system room with predefined categories (legacy endpoint, prefer using discover)"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"College\",\n  \"lat\": 28.6139,\n  \"lng\": 77.2090\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/rooms",
+                  "host": ["{{base_url}}"],
+                  "path": ["rooms"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"name\": \"College\",\n  \"type\": \"system\",\n  \"latitude\": 28.6139,\n  \"longitude\": 77.2090,\n  \"isActive\": true,\n  \"createdAt\": \"2026-01-15T10:35:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Room Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/rooms/:roomId?roomId=550e8400-e29b-41d4-a716-446655440000",
+              "host": ["{{base_url}}"],
+              "path": ["rooms", ":roomId"],
+              "query": [
+                {
+                  "key": "roomId",
+                  "value": "550e8400-e29b-41d4-a716-446655440000",
+                  "description": "UUID of the room"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": "550e8400-e29b-41d4-a716-446655440000"
+                }
+              ]
+            },
+            "description": "Get detailed information about a specific room by its ID"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/rooms/:roomId?roomId=550e8400-e29b-41d4-a716-446655440000",
+                  "host": ["{{base_url}}"],
+                  "path": ["rooms", ":roomId"],
+                  "query": [
+                    {
+                      "key": "roomId",
+                      "value": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"name\": \"University\",\n  \"type\": \"system\",\n  \"latitude\": 28.6139,\n  \"longitude\": 77.2090,\n  \"city\": \"Delhi\",\n  \"isActive\": true,\n  \"activeUserCount\": 12,\n  \"createdAt\": \"2026-01-15T10:30:00.000Z\",\n  \"lastActivityAt\": \"2026-01-15T12:45:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Nearby Rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/rooms/nearby?lat=28.6139&lng=77.2090",
+              "host": ["{{base_url}}"],
+              "path": ["rooms", "nearby"],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "28.6139",
+                  "description": "Latitude (required)"
+                },
+                {
+                  "key": "lng",
+                  "value": "77.2090",
+                  "description": "Longitude (required)"
+                }
+              ]
+            },
+            "description": "Find all rooms (both system and user rooms) near a specific location"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/rooms/nearby?lat=28.6139&lng=77.2090",
+                  "host": ["{{base_url}}"],
+                  "path": ["rooms", "nearby"],
+                  "query": [
+                    {
+                      "key": "lat",
+                      "value": "28.6139"
+                    },
+                    {
+                      "key": "lng",
+                      "value": "77.2090"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"name\": \"University\",\n    \"type\": \"system\",\n    \"latitude\": 28.6139,\n    \"longitude\": 77.2090,\n    \"distance\": 0.05,\n    \"activeUserCount\": 12\n  },\n  {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n    \"title\": \"Study Group\",\n    \"type\": \"user\",\n    \"latitude\": 28.6145,\n    \"longitude\": 77.2095,\n    \"distance\": 0.08,\n    \"activeUserCount\": 5,\n    \"createdBy\": \"user123\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get Nearby Active User Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/rooms/nearby/count?lat=28.6139&lng=77.2090",
+              "host": ["{{base_url}}"],
+              "path": ["rooms", "nearby", "count"],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "28.6139",
+                  "description": "Latitude (required)"
+                },
+                {
+                  "key": "lng",
+                  "value": "77.2090",
+                  "description": "Longitude (required)"
+                }
+              ]
+            },
+            "description": "Get the total count of active users in all rooms near a location"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/rooms/nearby/count?lat=28.6139&lng=77.2090",
+                  "host": ["{{base_url}}"],
+                  "path": ["rooms", "nearby", "count"],
+                  "query": [
+                    {
+                      "key": "lat",
+                      "value": "28.6139"
+                    },
+                    {
+                      "key": "lng",
+                      "value": "77.2090"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"totalActiveUsers\": 45,\n  \"latitude\": 28.6139,\n  \"longitude\": 77.2090\n}"
+            }
+          ]
+        }
+      ],
+      "description": "APIs for system-generated rooms (University, College, School, etc.)"
+    },
+    {
+      "name": "Rooms - User Created",
+      "item": [
+        {
+          "name": "Create User Room",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Study Group - CS101\",\n  \"lat\": 28.6139,\n  \"lng\": 77.2090,\n  \"createdBy\": \"user123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/rooms/user",
+              "host": ["{{base_url}}"],
+              "path": ["rooms", "user"]
+            },
+            "description": "Create a user-generated room with custom title. Maximum 5 user rooms allowed per area. Each room expires after 24 hours of inactivity."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Study Group - CS101\",\n  \"lat\": 28.6139,\n  \"lng\": 77.2090,\n  \"createdBy\": \"user123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/rooms/user",
+                  "host": ["{{base_url}}"],
+                  "path": ["rooms", "user"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"650e8400-e29b-41d4-a716-446655440010\",\n  \"title\": \"Study Group - CS101\",\n  \"type\": \"user\",\n  \"latitude\": 28.6139,\n  \"longitude\": 77.2090,\n  \"createdBy\": \"user123\",\n  \"isActive\": true,\n  \"expiresAt\": \"2026-01-16T12:00:00.000Z\",\n  \"createdAt\": \"2026-01-15T12:00:00.000Z\"\n}"
+            },
+            {
+              "name": "Error - Room Limit Reached",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Another Room\",\n  \"lat\": 28.6139,\n  \"lng\": 77.2090,\n  \"createdBy\": \"user123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/rooms/user",
+                  "host": ["{{base_url}}"],
+                  "path": ["rooms", "user"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"statusCode\": 400,\n  \"message\": \"Maximum limit of 5 user rooms reached in this area\",\n  \"error\": \"Bad Request\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User Rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/rooms/user?lat=28.6139&lng=77.2090",
+              "host": ["{{base_url}}"],
+              "path": ["rooms", "user"],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "28.6139",
+                  "description": "Latitude (required)"
+                },
+                {
+                  "key": "lng",
+                  "value": "77.2090",
+                  "description": "Longitude (required)"
+                }
+              ]
+            },
+            "description": "Get all user-created rooms in a specific area"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/rooms/user?lat=28.6139&lng=77.2090",
+                  "host": ["{{base_url}}"],
+                  "path": ["rooms", "user"],
+                  "query": [
+                    {
+                      "key": "lat",
+                      "value": "28.6139"
+                    },
+                    {
+                      "key": "lng",
+                      "value": "77.2090"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": \"650e8400-e29b-41d4-a716-446655440010\",\n    \"title\": \"Study Group - CS101\",\n    \"type\": \"user\",\n    \"latitude\": 28.6139,\n    \"longitude\": 77.2090,\n    \"createdBy\": \"user123\",\n    \"activeUserCount\": 8,\n    \"expiresAt\": \"2026-01-16T12:00:00.000Z\",\n    \"createdAt\": \"2026-01-15T12:00:00.000Z\"\n  },\n  {\n    \"id\": \"650e8400-e29b-41d4-a716-446655440011\",\n    \"title\": \"Movie Discussion\",\n    \"type\": \"user\",\n    \"latitude\": 28.6140,\n    \"longitude\": 77.2091,\n    \"createdBy\": \"user456\",\n    \"activeUserCount\": 3,\n    \"expiresAt\": \"2026-01-16T10:30:00.000Z\",\n    \"createdAt\": \"2026-01-15T10:30:00.000Z\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Check Available User Room Slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/rooms/user/slots?lat=28.6139&lng=77.2090",
+              "host": ["{{base_url}}"],
+              "path": ["rooms", "user", "slots"],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "28.6139",
+                  "description": "Latitude (required)"
+                },
+                {
+                  "key": "lng",
+                  "value": "77.2090",
+                  "description": "Longitude (required)"
+                }
+              ]
+            },
+            "description": "Check how many user room slots are available in an area (max 5 per area)"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/rooms/user/slots?lat=28.6139&lng=77.2090",
+                  "host": ["{{base_url}}"],
+                  "path": ["rooms", "user", "slots"],
+                  "query": [
+                    {
+                      "key": "lat",
+                      "value": "28.6139"
+                    },
+                    {
+                      "key": "lng",
+                      "value": "77.2090"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"totalSlots\": 5,\n  \"usedSlots\": 2,\n  \"availableSlots\": 3,\n  \"canCreateRoom\": true\n}"
+            }
+          ]
+        }
+      ],
+      "description": "APIs for user-created custom rooms with titles"
+    },
+    {
+      "name": "Rooms - Maintenance",
+      "item": [
+        {
+          "name": "Cleanup Expired Rooms",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/rooms/cleanup",
+              "host": ["{{base_url}}"],
+              "path": ["rooms", "cleanup"]
+            },
+            "description": "Manually trigger cleanup of expired user rooms (rooms inactive for 24+ hours). This can also be scheduled automatically."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/rooms/cleanup",
+                  "host": ["{{base_url}}"],
+                  "path": ["rooms", "cleanup"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Cleanup completed\",\n  \"deletedRooms\": 3,\n  \"timestamp\": \"2026-01-15T12:00:00.000Z\"\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Maintenance endpoints for room management"
+    },
+    {
+      "name": "WebSocket Events",
+      "item": [
+        {
+          "name": "WebSocket Connection Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/socket.io/",
+              "host": ["{{base_url}}"],
+              "path": ["socket.io", ""]
+            },
+            "description": "This is an informational endpoint. For actual WebSocket connections, use a WebSocket client.\n\n**WebSocket Connection URL:** `ws://localhost:4000` or `wss://your-domain.com`\n\n**Available Events:**\n\n1. **join-room**\n   - Emit: `{ roomId: 'uuid', userId: 'user123', username: 'JohnDoe' }`\n   - Description: Join a chat room\n   - Response: Room join confirmation\n\n2. **leave-room**\n   - Emit: `{ roomId: 'uuid', userId: 'user123' }`\n   - Description: Leave a chat room\n   - Response: Room leave confirmation\n\n3. **send-message**\n   - Emit: `{ roomId: 'uuid', userId: 'user123', message: 'Hello!' }`\n   - Description: Send a message to the room\n   - Broadcast: All users in room receive message\n\n4. **message** (Listen)\n   - Receive: `{ userId: 'user123', username: 'JohnDoe', message: 'Hello!', timestamp: '2026-01-15T12:00:00.000Z' }`\n   - Description: Receive messages from other users\n\n5. **user-joined** (Listen)\n   - Receive: `{ userId: 'user456', username: 'JaneDoe', activeUsers: 5 }`\n   - Description: Notification when a user joins the room\n\n6. **user-left** (Listen)\n   - Receive: `{ userId: 'user456', activeUsers: 4 }`\n   - Description: Notification when a user leaves the room\n\n**Example using Socket.io client:**\n```javascript\nconst socket = io('http://localhost:4000');\n\n// Join room\nsocket.emit('join-room', {\n  roomId: '550e8400-e29b-41d4-a716-446655440000',\n  userId: 'user123',\n  username: 'JohnDoe'\n});\n\n// Send message\nsocket.emit('send-message', {\n  roomId: '550e8400-e29b-41d4-a716-446655440000',\n  userId: 'user123',\n  message: 'Hello everyone!'\n});\n\n// Listen for messages\nsocket.on('message', (data) => {\n  console.log(`${data.username}: ${data.message}`);\n});\n\n// Listen for user joined\nsocket.on('user-joined', (data) => {\n  console.log(`${data.username} joined. Active users: ${data.activeUsers}`);\n});\n\n// Listen for user left\nsocket.on('user-left', (data) => {\n  console.log(`User left. Active users: ${data.activeUsers}`);\n});\n```"
+          },
+          "response": []
+        }
+      ],
+      "description": "WebSocket events for real-time chat functionality (informational - use WebSocket client for actual testing)"
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:4000",
+      "type": "string"
+    }
+  ]
+}
