@@ -32,34 +32,33 @@ jobs:
       - name: Verify build output
         run: |
           echo "=== Checking build output ==="
-          ls -la
-          echo ""
-          echo "=== Contents of dist folder ==="
           ls -la dist/
           echo ""
-          if [ -f "dist/main.js" ]; then
-            echo "✅ dist/main.js found!"
+          echo "=== Contents of dist/src folder ==="
+          ls -la dist/src/
+          echo ""
+          if [ -f "dist/src/main.js" ]; then
+            echo "✅ dist/src/main.js found!"
           else
-            echo "❌ ERROR: dist/main.js not found!"
+            echo "❌ ERROR: dist/src/main.js not found!"
             exit 1
           fi
       
       - name: Create deployment artifact
         run: |
           echo "=== Creating deployment package ==="
-          # Create a clean directory for deployment
           mkdir -p deploy
           
-          # Copy built application
+          # Copy the entire dist folder
           cp -r dist deploy/
           
-          # Copy necessary files
+          # Copy package files
           cp package.json deploy/
           cp package-lock.json deploy/
           
-          # Navigate to deploy directory and create zip
+          # Create zip
           cd deploy
-          zip -r ../deploy.zip . -x "*.git*"
+          zip -r ../deploy.zip .
           
           echo "=== Deployment package created ==="
           cd ..
