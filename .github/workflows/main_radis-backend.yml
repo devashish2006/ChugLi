@@ -1,38 +1,69 @@
 name: Deploy NestJS Backend
+
 on:
   push:
     branches:
       - main
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20.x
+          node-version: '20.x'
+          cache: 'npm'
       
       - name: Install dependencies
         run: npm ci
       
-      - name: Build Nest app
+      - name: Build application
         run: npm run build
       
       - name: Verify build output
-        run: ls -la dist/
-      
-      - name: Create deployment package
         run: |
-          mkdir deploy
+          echo "=== Checking build output ==="
+          ls -la
+          echo ""
+          echo "=== Contents of dist folder ==="
+          ls -la dist/
+          echo ""
+          if [ -f "dist/main.js" ]; then
+            echo "✅ dist/main.js found!"
+          else
+            echo "❌ ERROR: dist/main.js not found!"
+            exit 1
+          fi
+      
+      - name: Create deployment artifact
+        run: |
+          echo "=== Creating deployment package ==="
+          # Create a clean directory for deployment
+          mkdir -p deploy
+          
+          # Copy built application
           cp -r dist deploy/
+          
+          # Copy necessary files
           cp package.json deploy/
           cp package-lock.json deploy/
+          
+          # Navigate to deploy directory and create zip
           cd deploy
-          zip -r ../release.zip .
+          zip -r ../deploy.zip . -x "*.git*"
+          
+          echo "=== Deployment package created ==="
+          cd ..
+          ls -lh deploy.zip
       
       - name: Azure Login
         uses: azure/login@v2
@@ -41,8 +72,8 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_50B82BF41E3E4074814877F179B68674 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_D23C57B71C054CE18D75C000985B1B3B }}
       
-      - name: Deploy to Azure
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: radis-backend
-          package: release.zip
+          app-name: 'radis-backend'
+          package: deploy.zip
