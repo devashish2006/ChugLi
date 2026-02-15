@@ -1,5 +1,4 @@
 name: Deploy NestJS Backend
-
 on:
   push:
     branches:
@@ -8,32 +7,40 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: 20.x
-
+      
       - name: Install dependencies
         run: npm ci
-
+      
       - name: Build Nest app
         run: npm run build
-
-      - name: Create deployment zip
+      
+      - name: Verify build output
+        run: ls -la dist/
+      
+      - name: Create deployment package
         run: |
-          zip -r release.zip dist package.json package-lock.json node_modules
-
+          mkdir deploy
+          cp -r dist deploy/
+          cp package.json deploy/
+          cp package-lock.json deploy/
+          cd deploy
+          zip -r ../release.zip .
+      
       - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_3DCD60BA58CE40CEB593E51A31197DD4 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_50B82BF41E3E4074814877F179B68674 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_D23C57B71C054CE18D75C000985B1B3B }}
-
+      
       - name: Deploy to Azure
         uses: azure/webapps-deploy@v3
         with:
