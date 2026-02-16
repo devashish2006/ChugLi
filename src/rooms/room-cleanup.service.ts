@@ -36,7 +36,12 @@ export class RoomCleanupService implements OnModuleInit {
         this.logger.log(`Cleanup completed: ${cleaned.length} rooms removed`);
       }
     } catch (error) {
-      this.logger.error('Error during cleanup:', error);
+      // Only log a warning for DB connection issues to avoid spam
+      if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
+        this.logger.warn('Database connection issue during cleanup - will retry in next cycle');
+      } else {
+        this.logger.error('Error during cleanup:', error);
+      }
     }
   }
 
