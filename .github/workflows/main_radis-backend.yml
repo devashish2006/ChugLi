@@ -44,12 +44,6 @@ jobs:
             exit 1
           fi
       
-      - name: Install production dependencies
-        run: |
-          echo "=== Installing production dependencies ==="
-          npm ci --production
-          echo "=== Production node_modules ready ==="
-      
       - name: Create deployment artifact
         run: |
           echo "=== Creating deployment package ==="
@@ -57,9 +51,6 @@ jobs:
           
           # Copy the entire dist folder
           cp -r dist deploy/
-          
-          # Copy node_modules
-          cp -r node_modules deploy/
           
           # Copy package files
           cp package.json deploy/
@@ -80,6 +71,17 @@ jobs:
           echo "=== Deployment package created ==="
           cd ..
           ls -lh deploy.zip
+      
+      - name: Configure Azure App Settings
+        run: |
+          az webapp config appsettings set \
+            --name radis-backend \
+            --resource-group radis-rg \
+            --settings \
+              SCM_DO_BUILD_DURING_DEPLOYMENT=true \
+              ENABLE_ORYX_BUILD=true \
+              DISABLE_COLLECTSTATIC=1 \
+              WEBSITE_RUN_FROM_PACKAGE=0
       
       - name: Azure Login
         uses: azure/login@v2
