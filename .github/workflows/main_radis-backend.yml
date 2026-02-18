@@ -56,6 +56,10 @@ jobs:
           cp package.json deploy/
           cp package-lock.json deploy/
           
+          # Copy startup script
+          cp startup.sh deploy/
+          chmod +x deploy/startup.sh
+          
           # Copy deployment config files
           if [ -f ".deployment" ]; then
             cp .deployment deploy/
@@ -74,14 +78,17 @@ jobs:
       
       - name: Configure Azure App Settings
         run: |
+          az webapp config set \
+            --name radis-backend \
+            --resource-group radis-rg \
+            --startup-file "bash startup.sh"
+          
           az webapp config appsettings set \
             --name radis-backend \
             --resource-group radis-rg \
             --settings \
               SCM_DO_BUILD_DURING_DEPLOYMENT=true \
-              ENABLE_ORYX_BUILD=true \
-              DISABLE_COLLECTSTATIC=1 \
-              WEBSITE_RUN_FROM_PACKAGE=0
+              ENABLE_ORYX_BUILD=true
       
       - name: Azure Login
         uses: azure/login@v2
