@@ -29,7 +29,8 @@ export class AuthController {
       // Check if user is banned
       if (error instanceof HttpException && error.getResponse()['banned']) {
         const response = error.getResponse() as any;
-        res.redirect(`${frontendUrl}/banned?reason=${encodeURIComponent(response.banReason)}`);
+        const bannedAt = response.bannedAt ? new Date(response.bannedAt).toISOString() : new Date().toISOString();
+        res.redirect(`${frontendUrl}/banned?reason=${encodeURIComponent(response.banReason)}&bannedAt=${encodeURIComponent(bannedAt)}`);
       } else {
         res.redirect(`${frontendUrl}/auth/error?message=${encodeURIComponent(error.message)}`);
       }

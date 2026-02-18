@@ -57,7 +57,7 @@ export class RoomsService {
         gen_random_uuid(),
         ${name},
         ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
-        NOW() + interval '2 hours',
+        NOW() + interval '126 seconds',
         false
       )
       RETURNING id, name
@@ -254,7 +254,7 @@ export class RoomsService {
         gen_random_uuid(),
         ${name},
         ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
-        NOW() + interval '${sql.raw(config.expiryHours.toString())} hours',
+        NOW() + interval '126 seconds',
         true,
         ${roomType},
         ${cityName || null},

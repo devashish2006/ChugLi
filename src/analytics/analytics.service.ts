@@ -1,10 +1,36 @@
 import { Injectable } from '@nestjs/common';
 import { db } from '../db';
 import { users, rooms, messages } from '../db/schema';
-import { sql, desc, count, eq, gte, and } from 'drizzle-orm';
+import { sql, desc, count, eq, gte, and, lt } from 'drizzle-orm';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class AnalyticsService {
+  // Check every hour for users who should be unbanned
+  @Cron(CronExpression.EVERY_HOUR)
+  async autoUnbanUsers() {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    const result = await db
+      .update(users)
+      .set({ 
+        banned: false, 
+        banReason: null, 
+        bannedAt: null 
+      })
+      .where(
+        and(
+          eq(users.banned, true),
+          lt(users.bannedAt, twentyFourHoursAgo)
+        )
+      )
+      .returning({ id: users.id });
+
+    if (result.length > 0) {
+      console.log(`✅ Auto-unbanned ${result.length} user(s) after 24 hours`);
+    }
+  }
+
   async getOverview() {
     const [totalUsers] = await db
       .select({ count: count() })
@@ -48,6 +74,91 @@ export class AnalyticsService {
       messagesLast24h: messagesLast24h.count,
       systemRooms: systemRooms.count,
       userRooms: userRooms.count,
+    };
+  }
+
+  // Public stats for sharing with users
+  async getPublicStats() {
+    const [totalUsers] = await db
+      .select({ count: count() })
+      .from(users);
+
+    const [totalMessages] = await db
+      .select({ count: count() })
+      .from(messages);
+
+    const [activeRooms] = await db
+      .select({ count: count() })
+      .from(rooms)
+      .where(gte(rooms.expiresAt, new Date()));
+
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const [messagesLast24h] = await db
+      .select({ count: count() })
+      .from(messages)
+      .where(gte(messages.createdAt, oneDayAgo));
+
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const [messagesLastWeek] = await db
+      .select({ count: count() })
+      .from(messages)
+      .where(gte(messages.createdAt, oneWeekAgo));
+
+    const [activeUsersToday] = await db
+      .select({ count: count() })
+      .from(users)
+      .where(gte(users.lastLogin, oneDayAgo));
+
+    // Messages per day for last 30 days
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const messagesPerDay = await db
+      .select({
+        date: sql<string>`DATE(${messages.createdAt})`,
+        count: count(),
+      })
+      .from(messages)
+      .where(gte(messages.createdAt, thirtyDaysAgo))
+      .groupBy(sql`DATE(${messages.createdAt})`)
+      .orderBy(sql`DATE(${messages.createdAt})`);
+
+    // Most popular room types
+    const popularRoomTypes = await db
+      .select({
+        roomType: rooms.roomType,
+        count: count(),
+      })
+      .from(messages)
+      .innerJoin(rooms, eq(messages.roomId, rooms.id))
+      .where(and(
+        eq(rooms.isSystemRoom, true),
+        gte(messages.createdAt, thirtyDaysAgo)
+      ))
+      .groupBy(rooms.roomType)
+      .orderBy(desc(count()))
+      .limit(5);
+
+    // Peak activity hours
+    const hourlyActivity = await db
+      .select({
+        hour: sql<number>`EXTRACT(HOUR FROM ${messages.createdAt})`,
+        count: count(),
+      })
+      .from(messages)
+      .where(gte(messages.createdAt, oneWeekAgo))
+      .groupBy(sql`EXTRACT(HOUR FROM ${messages.createdAt})`)
+      .orderBy(desc(count()))
+      .limit(3);
+
+    return {
+      totalUsers: totalUsers.count,
+      totalMessages: totalMessages.count,
+      activeRooms: activeRooms.count,
+      messagesLast24h: messagesLast24h.count,
+      messagesLastWeek: messagesLastWeek.count,
+      activeUsersToday: activeUsersToday.count,
+      messagesPerDay,
+      popularRoomTypes,
+      peakHours: hourlyActivity.map(h => Math.floor(Number(h.hour))),
     };
   }
 
@@ -200,6 +311,7 @@ export class AnalyticsService {
         lastLogin: users.lastLogin,
         createdAt: users.createdAt,
         banned: users.banned,
+        bannedAt: users.bannedAt,
         violationCount: users.violationCount,
       })
       .from(users)
@@ -281,6 +393,7 @@ export class AnalyticsService {
         lastLogin: users.lastLogin,
         banned: users.banned,
         banReason: users.banReason,
+        bannedAt: users.bannedAt,
         violationCount: users.violationCount,
       })
       .from(users)
@@ -319,7 +432,7 @@ export class AnalyticsService {
   async banUser(userId: string, reason: string) {
     await db
       .update(users)
-      .set({ banned: true, banReason: reason })
+      .set({ banned: true, banReason: reason, bannedAt: new Date() })
       .where(eq(users.id, userId));
 
     return { success: true, message: 'User banned successfully' };
@@ -328,7 +441,7 @@ export class AnalyticsService {
   async unbanUser(userId: string) {
     await db
       .update(users)
-      .set({ banned: false, banReason: null })
+      .set({ banned: false, banReason: null, bannedAt: null })
       .where(eq(users.id, userId));
 
     return { success: true, message: 'User unbanned successfully' };
@@ -343,6 +456,7 @@ export class AnalyticsService {
         anonymousName: users.anonymousName,
         banned: users.banned,
         banReason: users.banReason,
+        bannedAt: users.bannedAt,
         lastLogin: users.lastLogin,
         createdAt: users.createdAt,
         violationCount: users.violationCount,
