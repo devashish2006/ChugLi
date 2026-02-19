@@ -121,11 +121,11 @@ if [ -e "$DEPLOYMENT_SOURCE/tsconfig.json" ]; then
   cd - > /dev/null
 fi
 
-# 4. Prune dev dependencies
+# 4. Install production dependencies (skip prune to avoid issues)
 cd "$DEPLOYMENT_SOURCE"
-echo "Pruning dev dependencies"
-eval $NPM_CMD prune --production
-exitWithMessageOnError "npm prune failed"
+echo "Ensuring production dependencies are installed"
+eval $NPM_CMD install --omit=dev
+exitWithMessageOnError "npm install production failed"
 cd - > /dev/null
 
 # 5. KuduSync
