@@ -60,29 +60,13 @@ jobs:
           cp startup.sh deploy/
           chmod +x deploy/startup.sh
           
-          # Copy deployment config files
-          if [ -f ".deployment" ]; then
-            cp .deployment deploy/
-          fi
-          if [ -d ".azure" ]; then
-            cp -r .azure deploy/
+          # Copy .env.example if exists
+          if [ -f ".env.example" ]; then
+            cp .env.example deploy/
           fi
           
-          # Install production dependencies in deploy folder
+          # Create zip (without node_modules - will be installed on Azure)
           cd deploy
-          echo "=== Installing production dependencies ==="
-          npm ci --omit=dev
-          
-          # Verify critical dependencies
-          echo "=== Verifying @nestjs/schedule installation ==="
-          if node -e "require('@nestjs/schedule')" 2>/dev/null; then
-            echo "✅ @nestjs/schedule is installed"
-          else
-            echo "❌ ERROR: @nestjs/schedule missing!"
-            exit 1
-          fi
-          
-          # Create zip
           zip -r ../deploy.zip .
           
           echo "=== Deployment package created ==="
@@ -98,17 +82,18 @@ jobs:
       
       - name: Configure Azure App Settings
         run: |
-          az webapp config set \
-            --name radis-backend \
-            --resource-group radis-rg \
-            --startup-file "bash startup.sh"
-          
           az webapp config appsettings set \
             --name radis-backend \
             --resource-group radis-rg \
             --settings \
               SCM_DO_BUILD_DURING_DEPLOYMENT=false \
-              ENABLE_ORYX_BUILD=false
+              ENABLE_ORYX_BUILD=false \
+              WEBSITE_RUN_FROM_PACKAGE=0
+          
+          az webapp config set \
+            --name radis-backend \
+            --resource-group radis-rg \
+            --startup-file "bash startup.sh"
       
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
