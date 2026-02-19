@@ -68,13 +68,33 @@ jobs:
             cp -r .azure deploy/
           fi
           
-          # Create zip
+          # Install production dependencies in deploy folder
           cd deploy
+          echo "=== Installing production dependencies ==="
+          npm ci --omit=dev
+          
+          # Verify critical dependencies
+          echo "=== Verifying @nestjs/schedule installation ==="
+          if node -e "require('@nestjs/schedule')" 2>/dev/null; then
+            echo "✅ @nestjs/schedule is installed"
+          else
+            echo "❌ ERROR: @nestjs/schedule missing!"
+            exit 1
+          fi
+          
+          # Create zip
           zip -r ../deploy.zip .
           
           echo "=== Deployment package created ==="
           cd ..
           ls -lh deploy.zip
+      
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_3DCD60BA58CE40CEB593E51A31197DD4 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_50B82BF41E3E4074814877F179B68674 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_D23C57B71C054CE18D75C000985B1B3B }}
       
       - name: Configure Azure App Settings
         run: |
@@ -87,15 +107,8 @@ jobs:
             --name radis-backend \
             --resource-group radis-rg \
             --settings \
-              SCM_DO_BUILD_DURING_DEPLOYMENT=true \
-              ENABLE_ORYX_BUILD=true
-      
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_3DCD60BA58CE40CEB593E51A31197DD4 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_50B82BF41E3E4074814877F179B68674 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_D23C57B71C054CE18D75C000985B1B3B }}
+              SCM_DO_BUILD_DURING_DEPLOYMENT=false \
+              ENABLE_ORYX_BUILD=false
       
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
