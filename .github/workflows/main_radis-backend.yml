@@ -100,3 +100,9 @@ jobs:
         with:
           app-name: 'radis-backend'
           package: deploy.zip
+      
+      - name: Restart Azure App Service
+        run: |
+          echo "Restarting Azure App Service to ensure new code is loaded..."
+          az webapp restart --name radis-backend --resource-group radis-rg
+          echo "✅ Restart initiated successfully"
