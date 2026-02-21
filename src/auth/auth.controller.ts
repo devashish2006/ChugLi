@@ -49,6 +49,10 @@ export class AuthController {
 
       return await this.authService.login(user);
     } catch (error) {
+      // Re-throw HttpException as-is so NextAuth can see the status code
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw error;
     }
   }

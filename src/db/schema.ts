@@ -20,6 +20,17 @@ export const users = pgTable('users', {
   banReason: text('ban_reason'),
   bannedAt: timestamp('banned_at'),
   violationCount: integer('violation_count').default(0).notNull(),
+  // Enhanced user behavior tracking
+  loginCount: integer('login_count').default(1).notNull(),
+  totalSessions: integer('total_sessions').default(1).notNull(),
+  averageSessionDuration: integer('average_session_duration').default(0), // in minutes
+  firstLoginDate: timestamp('first_login_date').defaultNow().notNull(),
+  lastActivityAt: timestamp('last_activity_at').defaultNow().notNull(),
+  preferredRoomTypes: text('preferred_room_types'), // JSON array of room types
+  totalRoomsCreated: integer('total_rooms_created').default(0).notNull(),
+  totalRoomsJoined: integer('total_rooms_joined').default(0).notNull(),
+  isOnline: boolean('is_online').default(false).notNull(),
+  lastSeenAt: timestamp('last_seen_at').defaultNow().notNull(),
 });
 
 export const rooms = pgTable('rooms', {

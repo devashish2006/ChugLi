@@ -47,10 +47,38 @@ export class ChatGateway implements OnGatewayDisconnect, OnGatewayConnection {
   >();
 
   // ======================
+  // NOTIFY USER BANNED
+  // ======================
+  notifyUserBanned(userId: string, reason: string, bannedAt: Date) {
+    // Find all sockets for this user
+    const userSockets: string[] = [];
+    this.socketToUser.forEach((uid, socketId) => {
+      if (uid === userId) {
+        userSockets.push(socketId);
+      }
+    });
+
+    // Notify and disconnect all user's sockets
+    userSockets.forEach(socketId => {
+      const socket = this.server.sockets.sockets.get(socketId);
+      if (socket) {
+        socket.emit('user-banned', {
+          message: 'Your account has been suspended',
+          banReason: reason,
+          bannedAt: bannedAt.toISOString(),
+        });
+        socket.disconnect(true);
+      }
+    });
+
+    console.log(`🚫 Notified and disconnected ${userSockets.length} socket(s) for banned user:`, userId);
+  }
+
+  // ======================
   // BROADCAST ROOM CREATION TO NEARBY USERS
   // ======================
   broadcastNewRoom(roomData: any) {
-    console.log('📢 Broadcasting new room creation:', roomData);
+
     // Broadcast to all connected clients
     // Clients will filter based on their location
     this.server.emit('new-room-created', roomData);
@@ -64,7 +92,7 @@ export class ChatGateway implements OnGatewayDisconnect, OnGatewayConnection {
       const token = client.handshake.auth.token || client.handshake.headers.authorization?.split(' ')[1];
       
       if (!token) {
-        console.log('❌ Client connected without token:', client.id);
+
         client.disconnect();
         return;
       }
@@ -79,15 +107,27 @@ export class ChatGateway implements OnGatewayDisconnect, OnGatewayConnection {
         .where(eq(users.id, payload.sub))
         .limit(1);
 
-      if (userRecords.length === 0 || userRecords[0].banned) {
-        console.log('❌ Invalid or banned user:', payload.sub);
+      if (userRecords.length === 0) {
+
+        client.disconnect();
+        return;
+      }
+
+      if (userRecords[0].banned) {
+
+        // Emit ban event before disconnecting
+        client.emit('user-banned', {
+          message: 'Your account has been suspended',
+          banReason: userRecords[0].banReason,
+          bannedAt: userRecords[0].bannedAt,
+        });
         client.disconnect();
         return;
       }
 
       // Store user mapping
       this.socketToUser.set(client.id, payload.sub);
-      console.log('✅ Authenticated user connected:', client.id, '→', payload.sub);
+
       
     } catch (error) {
       // Silently disconnect clients with invalid tokens (e.g., after server restart)
@@ -150,7 +190,7 @@ export class ChatGateway implements OnGatewayDisconnect, OnGatewayConnection {
 
     // Broadcast live user count to EVERYONE in the room (including the new joiner)
     const userCount = roomUsersMap.size;
-    console.log(`📊 Broadcasting user count for room ${roomId}: ${userCount} users`);
+
     this.server.to(roomId).emit('user-count', userCount);
     
     // Also send to the client directly to ensure they get it
@@ -181,13 +221,13 @@ export class ChatGateway implements OnGatewayDisconnect, OnGatewayConnection {
 
       // Broadcast user left notification before cleanup
       if (username) {
-        console.log(`👋 User ${username} left room ${roomId}`);
+
         this.server.to(roomId).emit('user-left', { username });
       }
 
       // If room is empty, delete it (only user rooms)
       if (users.size === 0) {
-        console.log(`🗑️ Room ${roomId} is empty, checking if it should be deleted`);
+
         const deletedRoom = await this.roomsService.deleteEmptyRoom(roomId);
         if (deletedRoom) {
           console.log(`✅ Deleted empty user room: ${deletedRoom.name} (${roomId})`);
@@ -200,16 +240,19 @@ export class ChatGateway implements OnGatewayDisconnect, OnGatewayConnection {
         this.messageStats.delete(roomId);
       } else {
         console.log(`📊 Room ${roomId} now has ${users.size} user(s)`);
-        // Check if only one user left in a user room
+        // Check if only one user left in a user room - redirect them to lobby
         if (users.size === 1) {
           // Check if this is a user-created room
           const roomDetails = await this.roomsService.getRoomDetails(roomId);
           if (roomDetails && roomDetails.isUserRoom) {
-            console.log(`⚠️ Last user in room ${roomId}, sending warning`);
-            // Notify the last user
-            this.server.to(roomId).emit('last-user-warning', {
-              message: 'You are the last person in this room. The room will be deleted when you leave.',
+
+            // Redirect the last user to lobby (room will be deleted when they leave)
+            this.server.to(roomId).emit('room-closing', {
+              message: 'The other user has left. Returning you to the lobby.',
             });
+            // Don't emit user-count since we're redirecting the user
+            client.leave(roomId);
+            return; // Exit early
           }
         }
         // Broadcast updated user count
@@ -266,7 +309,7 @@ export class ChatGateway implements OnGatewayDisconnect, OnGatewayConnection {
             SET violation_count = violation_count + 1 
             WHERE id = ${userId}::uuid
           `);
-          console.log(`⚠️ Incremented violation count for user ${userId}`);
+
         } catch (error) {
           console.error('Error updating violation count:', error);
         }
@@ -288,7 +331,7 @@ export class ChatGateway implements OnGatewayDisconnect, OnGatewayConnection {
         reason: moderationResult.reason,
       });
       
-      console.log(`🚫 Message blocked from ${username} in room ${roomId}: ${moderationResult.reason}`);
+
       return; // Stop here, don't broadcast
     }
 
@@ -363,7 +406,7 @@ handleTyping(
 
         // Broadcast user left notification
         if (username) {
-          console.log(`👋 User ${username} disconnected from room ${roomId}`);
+
           this.server.to(roomId).emit('user-left', { username });
         }
 
@@ -371,14 +414,17 @@ handleTyping(
           roomsToDelete.push(roomId);
         } else {
           console.log(`📊 Room ${roomId} now has ${users.size} user(s) after disconnect`);
-          // Check if only one user left in a user room
+          // Check if only one user left in a user room - redirect them to lobby
           if (users.size === 1) {
             const roomDetails = await this.roomsService.getRoomDetails(roomId);
             if (roomDetails && roomDetails.isUserRoom) {
-              console.log(`⚠️ Last user in room ${roomId} after disconnect, sending warning`);
-              this.server.to(roomId).emit('last-user-warning', {
-                message: 'You are the last person in this room. The room will be deleted when you leave.',
+
+              // Redirect the last user to lobby (room will be deleted when they leave)
+              this.server.to(roomId).emit('room-closing', {
+                message: 'The other user has left. Returning you to the lobby.',
               });
+              // Don't emit user-count since we're redirecting the user
+              continue; // Skip user-count emit
             }
           }
           this.server.to(roomId).emit('user-count', users.size);
@@ -388,7 +434,7 @@ handleTyping(
 
     // Delete empty user rooms
     for (const roomId of roomsToDelete) {
-      console.log(`🗑️ Deleting empty room ${roomId} after disconnect`);
+
       const deletedRoom = await this.roomsService.deleteEmptyRoom(roomId);
       if (deletedRoom) {
         console.log(`✅ Deleted empty user room: ${deletedRoom.name} (${roomId})`);

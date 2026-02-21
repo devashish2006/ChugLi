@@ -8,6 +8,8 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'https://radiusfrontend.vercel.app',
+      'https://redius.live',
+      'https://www.redius.live',
     ],
     credentials: true,
   });
@@ -15,7 +17,7 @@ async function bootstrap() {
   const port = process.env.PORT || 4000;
   await app.listen(port);
 
-  console.log(`🚀 Backend running on port ${port}`);
+
 }
 
 bootstrap();

@@ -97,4 +97,16 @@ export class AnalyticsController {
     const limitNum = limit ? parseInt(limit) : 100;
     return this.analyticsService.getRecentActivity(limitNum);
   }
+
+  @Get('user-details/:userId')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async getUserDetails(@Param('userId') userId: string) {
+    return this.analyticsService.getUserDetails(userId);
+  }
+
+  @Get('online-users')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async getOnlineUsers() {
+    return this.analyticsService.getOnlineUsers();
+  }
 }

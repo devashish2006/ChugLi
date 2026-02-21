@@ -107,7 +107,7 @@ export class AuthService {
 
   async validateJwtPayload(payload: any) {
     try {
-      console.log('🔍 Validating JWT payload for user ID:', payload.sub);
+
       const user = await db
         .select()
         .from(users)
@@ -120,7 +120,7 @@ export class AuthService {
       }
 
       if (user[0].banned) {
-        console.log('🚫 User is banned:', user[0].email);
+
         throw new HttpException(
           {
             statusCode: HttpStatus.FORBIDDEN,
@@ -133,7 +133,7 @@ export class AuthService {
         );
       }
 
-      console.log('✓ JWT validation successful for:', user[0].email);
+
       return user[0];
     } catch (error) {
       if (error instanceof HttpException) {

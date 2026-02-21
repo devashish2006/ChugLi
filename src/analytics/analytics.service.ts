@@ -3,9 +3,11 @@ import { db } from '../db';
 import { users, rooms, messages } from '../db/schema';
 import { sql, desc, count, eq, gte, and, lt } from 'drizzle-orm';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { ChatGateway } from '../chat/chat.gateway';
 
 @Injectable()
 export class AnalyticsService {
+  constructor(private chatGateway: ChatGateway) {}
   // Check every hour for users who should be unbanned
   @Cron(CronExpression.EVERY_HOUR)
   async autoUnbanUsers() {
@@ -313,6 +315,17 @@ export class AnalyticsService {
         banned: users.banned,
         bannedAt: users.bannedAt,
         violationCount: users.violationCount,
+        // New tracking fields
+        loginCount: users.loginCount,
+        totalSessions: users.totalSessions,
+        averageSessionDuration: users.averageSessionDuration,
+        firstLoginDate: users.firstLoginDate,
+        lastActivityAt: users.lastActivityAt,
+        preferredRoomTypes: users.preferredRoomTypes,
+        totalRoomsCreated: users.totalRoomsCreated,
+        totalRoomsJoined: users.totalRoomsJoined,
+        isOnline: users.isOnline,
+        lastSeenAt: users.lastSeenAt,
       })
       .from(users)
       .orderBy(desc(users.lastLogin))
@@ -326,9 +339,21 @@ export class AnalyticsService {
           .from(messages)
           .where(eq(messages.userId, user.id));
 
+        // Calculate days since first login
+        const daysSinceJoined = Math.floor(
+          (Date.now() - new Date(user.firstLoginDate).getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        // Calculate engagement score (messages per day since joining)
+        const engagementScore = daysSinceJoined > 0 
+          ? (Number(messageCount.count) / daysSinceJoined).toFixed(2)
+          : messageCount.count;
+
         return {
           ...user,
           messageCount: messageCount.count,
+          daysSinceJoined,
+          engagementScore: parseFloat(engagementScore as string),
         };
       })
     );
@@ -395,6 +420,17 @@ export class AnalyticsService {
         banReason: users.banReason,
         bannedAt: users.bannedAt,
         violationCount: users.violationCount,
+        // New tracking fields
+        loginCount: users.loginCount,
+        totalSessions: users.totalSessions,
+        averageSessionDuration: users.averageSessionDuration,
+        firstLoginDate: users.firstLoginDate,
+        lastActivityAt: users.lastActivityAt,
+        preferredRoomTypes: users.preferredRoomTypes,
+        totalRoomsCreated: users.totalRoomsCreated,
+        totalRoomsJoined: users.totalRoomsJoined,
+        isOnline: users.isOnline,
+        lastSeenAt: users.lastSeenAt,
       })
       .from(users)
       .orderBy(desc(users.createdAt))
@@ -413,9 +449,21 @@ export class AnalyticsService {
           .from(messages)
           .where(eq(messages.userId, user.id));
 
+        // Calculate days since first login
+        const daysSinceJoined = Math.floor(
+          (Date.now() - new Date(user.firstLoginDate).getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        // Calculate engagement score
+        const engagementScore = daysSinceJoined > 0 
+          ? (Number(messageCount.count) / daysSinceJoined).toFixed(2)
+          : messageCount.count;
+
         return {
           ...user,
           messageCount: messageCount.count,
+          daysSinceJoined,
+          engagementScore: parseFloat(engagementScore as string),
         };
       })
     );
@@ -430,10 +478,15 @@ export class AnalyticsService {
   }
 
   async banUser(userId: string, reason: string) {
+    const bannedAt = new Date();
+    
     await db
       .update(users)
-      .set({ banned: true, banReason: reason, bannedAt: new Date() })
+      .set({ banned: true, banReason: reason, bannedAt: bannedAt })
       .where(eq(users.id, userId));
+
+    // Notify the user via WebSocket if they're connected
+    this.chatGateway.notifyUserBanned(userId, reason, bannedAt);
 
     return { success: true, message: 'User banned successfully' };
   }
@@ -498,5 +551,142 @@ export class AnalyticsService {
     );
 
     return messagesWithRooms;
+  }
+
+  async getUserDetails(userId: string) {
+    // Get user basic info
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId));
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Get message stats
+    const [messageStats] = await db
+      .select({
+        totalMessages: count(),
+      })
+      .from(messages)
+      .where(eq(messages.userId, userId));
+
+    // Get messages per day for the last 30 days
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const messageHistory = await db
+      .select({
+        date: sql<string>`DATE(${messages.createdAt})`,
+        count: count(),
+      })
+      .from(messages)
+      .where(and(
+        eq(messages.userId, userId),
+        gte(messages.createdAt, thirtyDaysAgo)
+      ))
+      .groupBy(sql`DATE(${messages.createdAt})`)
+      .orderBy(sql`DATE(${messages.createdAt})`);
+
+    // Get favorite rooms (most active in)
+    const favoriteRooms = await db
+      .select({
+        roomId: messages.roomId,
+        roomName: rooms.name,
+        roomType: rooms.roomType,
+        messageCount: count(),
+      })
+      .from(messages)
+      .innerJoin(rooms, eq(messages.roomId, rooms.id))
+      .where(eq(messages.userId, userId))
+      .groupBy(messages.roomId, rooms.name, rooms.roomType)
+      .orderBy(desc(count()))
+      .limit(5);
+
+    // Get activity by hour
+    const activityByHour = await db
+      .select({
+        hour: sql<number>`EXTRACT(HOUR FROM ${messages.createdAt})`,
+        count: count(),
+      })
+      .from(messages)
+      .where(eq(messages.userId, userId))
+      .groupBy(sql`EXTRACT(HOUR FROM ${messages.createdAt})`)
+      .orderBy(sql`EXTRACT(HOUR FROM ${messages.createdAt})`);
+
+    // Get recent messages
+    const recentMessages = await db
+      .select({
+        id: messages.id,
+        message: messages.message,
+        roomId: messages.roomId,
+        createdAt: messages.createdAt,
+      })
+      .from(messages)
+      .where(eq(messages.userId, userId))
+      .orderBy(desc(messages.createdAt))
+      .limit(10);
+
+    // Get room info for recent messages
+    const recentMessagesWithRooms = await Promise.all(
+      recentMessages.map(async (msg) => {
+        const [room] = await db
+          .select({ name: rooms.name })
+          .from(rooms)
+          .where(eq(rooms.id, msg.roomId));
+        
+        return {
+          ...msg,
+          roomName: room?.name || 'Unknown Room',
+        };
+      })
+    );
+
+    // Calculate engagement metrics
+    const daysSinceJoined = Math.floor(
+      (Date.now() - new Date(user.firstLoginDate).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const messagesPerDay = daysSinceJoined > 0 
+      ? parseFloat((Number(messageStats.totalMessages) / daysSinceJoined).toFixed(2))
+      : Number(messageStats.totalMessages);
+
+    return {
+      user: {
+        ...user,
+        daysSinceJoined,
+        messagesPerDay,
+      },
+      stats: {
+        totalMessages: messageStats.totalMessages,
+        messageHistory,
+        favoriteRooms,
+        activityByHour,
+      },
+      recentActivity: recentMessagesWithRooms,
+    };
+  }
+
+  async getOnlineUsers() {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    
+    const onlineUsers = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        avatarUrl: users.avatarUrl,
+        lastSeenAt: users.lastSeenAt,
+        isOnline: users.isOnline,
+      })
+      .from(users)
+      .where(
+        and(
+          eq(users.banned, false),
+          gte(users.lastSeenAt, fiveMinutesAgo)
+        )
+      )
+      .orderBy(desc(users.lastSeenAt))
+      .limit(50);
+
+    return onlineUsers;
   }
 }

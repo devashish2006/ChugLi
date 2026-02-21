@@ -57,7 +57,7 @@ export class RoomsService {
         gen_random_uuid(),
         ${name},
         ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
-        NOW() + interval '126 seconds',
+        (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + interval '2 hours'),
         false
       )
       RETURNING id, name
@@ -244,6 +244,7 @@ export class RoomsService {
     const config = getRoomTypeConfig(roomType);
     const name = formatRoomName(config, cityName);
     const prompt = formatRoomPrompt(config, cityName);
+    const expiryInterval = `${config.expiryHours} hours`;
 
     const result = await db.execute(sql`
       INSERT INTO rooms (
@@ -254,7 +255,7 @@ export class RoomsService {
         gen_random_uuid(),
         ${name},
         ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
-        NOW() + interval '126 seconds',
+        (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + interval '${sql.raw(expiryInterval)}'),
         true,
         ${roomType},
         ${cityName || null},
@@ -265,7 +266,7 @@ export class RoomsService {
       RETURNING id, name, room_type, prompt
     `);
 
-    this.logger.log(`Created system room: ${name} (${roomType}) at (${lat}, ${lng})`);
+    this.logger.log(`Created system room: ${name} (${roomType}) with ${config.expiryHours}h expiry at (${lat}, ${lng})`);
     return result.rows[0];
   }
 
@@ -455,6 +456,27 @@ export class RoomsService {
     this.logger.log(`🕐 Converted to ISO: ${expiresAtISO}`);
     this.logger.log(`🕐 Current server time: ${new Date().toISOString()}`);
 
+    // Extract latitude and longitude from PostGIS point
+    let latitude = null;
+    let longitude = null;
+    
+    try {
+      // Get the location as text and parse coordinates
+      const locationResult = await db.execute(sql`
+        SELECT ST_Y(location::geometry) as latitude, ST_X(location::geometry) as longitude
+        FROM rooms
+        WHERE id = ${roomId}::uuid
+      `);
+      
+      if (locationResult.rows.length > 0) {
+        latitude = locationResult.rows[0].latitude;
+        longitude = locationResult.rows[0].longitude;
+        this.logger.log(`📍 Room location: ${latitude}, ${longitude}`);
+      }
+    } catch (err) {
+      this.logger.error('Error extracting location:', err);
+    }
+
     return {
       id: room.id,
       name: room.name,
@@ -465,6 +487,8 @@ export class RoomsService {
       isUserRoom: room.is_user_room,
       createdBy: room.created_by,
       userCount,
+      latitude,
+      longitude,
     };
   }
 

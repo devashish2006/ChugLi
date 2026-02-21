@@ -18,7 +18,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    console.log('🔐 JWT validate called with payload:', { sub: payload.sub, email: payload.email });
+
     const user = await this.authService.validateJwtPayload(payload);
     
     if (!user) {
@@ -27,7 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found. Please log in again.');
     }
     
-    console.log('✓ User validated:', { id: user.id, email: user.email });
+
     return user;
   }
 }
