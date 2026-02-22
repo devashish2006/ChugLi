@@ -11,7 +11,7 @@ export enum ModerationLevel {
 
 // 🔴 ABUSE WORDS - BLOCKED IN ALL ROOMS
 const ABUSE_WORDS = [
-  'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'damn', 'hell',
+  'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'damn',
   'idiot', 'stupid', 'dumb', 'retard', 'moron', 'loser',
   'cunt', 'dick', 'cock', 'pussy', 'whore', 'slut',
   // Add Hindi/local abusive words
