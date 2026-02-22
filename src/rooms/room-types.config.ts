@@ -83,7 +83,7 @@ export const ROOM_TYPE_CONFIGS: Record<RoomType, RoomTypeConfig> = {
     promptTemplate: 'LIVE reactions during the match! Celebrate, rage, react!',
     expiryHours: 8,
     activeHourStart: 20, // 8 PM
-    activeHourEnd: 24, // 12 AM (midnight)
+    activeHourEnd: 0, // 12 AM (midnight)
     isTimeSensitive: true,
     radiusMeters: 5000, // 5km radius
   },
@@ -103,13 +103,13 @@ export function getRoomTypeConfig(type: RoomType): RoomTypeConfig {
   return ROOM_TYPE_CONFIGS[type];
 }
 
-export function isRoomActiveNow(config: RoomTypeConfig): boolean {
+export function isRoomActiveNow(config: RoomTypeConfig, userHour?: number): boolean {
   if (!config.isTimeSensitive) {
     return true;
   }
 
-  const now = new Date();
-  const currentHour = now.getHours();
+  // Use provided userHour if available, otherwise fall back to server time
+  const currentHour = userHour !== undefined ? userHour : new Date().getHours();
 
   const start = config.activeHourStart!;
   const end = config.activeHourEnd!;

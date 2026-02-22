@@ -326,6 +326,7 @@ export class RoomsService {
     lat: number,
     lng: number,
     cityName?: string,
+    userHour?: number,
   ): Promise<SystemRoom[]> {
     const rooms: SystemRoom[] = [];
 
@@ -334,7 +335,7 @@ export class RoomsService {
 
     for (const roomType of roomTypes) {
       const config = getRoomTypeConfig(roomType);
-      const isActive = !config.isTimeSensitive || isRoomActiveNow(config);
+      const isActive = !config.isTimeSensitive || isRoomActiveNow(config, userHour);
 
       try {
         // For inactive time-sensitive rooms, find existing or create placeholder

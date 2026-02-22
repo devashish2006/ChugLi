@@ -59,11 +59,13 @@ export class RoomsController {
     @Query('lat') lat: string,
     @Query('lng') lng: string,
     @Query('city') city?: string,
+    @Query('userHour') userHour?: string,
   ) {
     return this.roomsService.discoverSystemRooms(
       Number(lat),
       Number(lng),
       city,
+      userHour ? Number(userHour) : undefined,
     );
   }
 
